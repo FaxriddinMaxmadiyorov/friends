@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  resources :messages
   resources :chat_rooms
   root "friends#index"
   devise_for :users, controllers: {

@@ -1,27 +1,50 @@
-<p id="notice"><%= notice %></p>
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-3">
+      hello <%= current_user.email %>
+      <%= render 'form',chat_room: ChatRoom.new %>
+      <hr>
+      <% @chat_rooms.each do |chat_room| %>
+        <%= link_to chat_room do %>
+          <div class="card mb-2">
+            <div class="card-body">
+              <%= chat_room.id %>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
 
-<h1>Chat Rooms</h1>
+    <div class="col-9">
+      <% if @chat_room.present? %>
+        <div class="chat-room">
+          <div class="navbar navbar-light bg-light mb-4">
+            <span class="navbar-brand"><%= @chat_room.id %></span>
+            <ul class="navbar-nav">
+              <li class="nav-item">
+                Hello, <%= current_user.email %>
+              </li>
+            </ul>
+          </div>
+          <% @chat_room.messages.each do |message| %>
+            <div class="message mb-2<%= ' me' if message.user == current_user %>">
+              <div class="content-container">
+                <div class="content">
+                  <%= message.content %>
+                </div>
+                <div class="author">
+                  <%= message.user.email %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+          <div class="chat-box">
+            <%= render 'messages/form', message: Message.new, chat_room: @chat_room %>
+          </div>
+        </div>
+        
+      <% end %>
+    </div>
 
-<table>
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th colspan="3"></th>
-    </tr>
-  </thead>
-
-  <tbody>
-    <% @chat_rooms.each do |chat_room| %>
-      <tr>
-        <td><%= chat_room.name %></td>
-        <td><%= link_to 'Show', chat_room %></td>
-        <td><%= link_to 'Edit', edit_chat_room_path(chat_room) %></td>
-        <td><%= link_to 'Destroy', chat_room, method: :delete, data: { confirm: 'Are you sure?' } %></td>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
-
-<br>
-
-<%= link_to 'New Chat Room', new_chat_room_path %>
+  </div>
+</div>
