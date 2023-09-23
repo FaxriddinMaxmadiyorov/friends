@@ -8,9 +8,10 @@
 
 .chat-room {
   height: 100vh;
+  background-color: #fff;
 
   #messages {
-    height: 100%;
+    height: calc(100% - 86px);
     overflow-y: scroll;
     padding-bottom: 200px;
   }
@@ -26,7 +27,7 @@
     .content-container {
       display: inline-block;
       .content {
-        background-color: #eeeeee;
+        background-color: #c8cedb;
         padding: 8px 16px;
         border-radius: 20px;
       }
@@ -40,7 +41,7 @@
       .content-container {
         float: right;
         .content {
-          background-color: #007bff;
+          background-color: #3d0c37;
           color: white;
         }
       }
@@ -48,7 +49,7 @@
   }
   .chat-box {
     position: absolute;
-    bottom: -10px;
+    // bottom: -10px;
     padding: 20px;
     width: 100%;
     margin-left: -15px;
@@ -74,6 +75,7 @@
     text-decoration: none;
   }
   .room-card {
+    background-color: #eeffee;
     transition: background-color 0.5s ease;
     border-radius: 20px;
     &:hover {

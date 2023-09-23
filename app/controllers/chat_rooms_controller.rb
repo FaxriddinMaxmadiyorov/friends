@@ -9,7 +9,6 @@ class ChatRoomsController < ApplicationController
   # GET /chat_rooms/1 or /chat_rooms/1.json
   def show
     @chat_rooms  = ChatRoom.all
-    # byebu
     render 'index'
   end
 
