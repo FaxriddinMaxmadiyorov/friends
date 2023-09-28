@@ -7,7 +7,9 @@ Rails.application.routes.draw do
     sessions: 'users/sessions',
     omniauth_callbacks: 'users/omniauth_callbacks'
   }
-  resources :friends
+  resources :friends do
+    post :instantiate_chat, on: :member
+  end
   get 'home/about'
   # get '/auth/:provider/callback' => 'sessions#omniauth'
 end

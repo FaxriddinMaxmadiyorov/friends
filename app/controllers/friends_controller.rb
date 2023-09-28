@@ -65,6 +65,10 @@ class FriendsController < ApplicationController
     redirect_to friends_path, notice: "Not Authorized to EDIT this friend" if @friend.nil?
   end
 
+  def instantiate_chat
+    
+  end
+
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_friend
