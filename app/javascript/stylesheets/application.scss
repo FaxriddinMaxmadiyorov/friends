@@ -6,6 +6,15 @@
 //   -ms-overflow-style: none;
 // }
 
+body {
+  margin: 0;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
 .chat-room {
   height: 100vh;
   background-color: #fff;

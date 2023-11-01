@@ -1,0 +1,44 @@
+<div id="room-id" data-room-id="<%= @chat_room.try(:id) %>">
+<div id="user-id" data-user-id="<%= current_user.id %>">
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-3 rooms-sidebar">
+      <div class="card no-outline">
+        <div class="card-body">
+          <small>Logged in as</small> 
+          <b><%= current_user.email %></b>
+        </div>
+      </div>
+      <hr>
+      <% @chat_rooms.each do |chat_room| %>
+        <%= link_to chat_room, class: 'room-link' do %>
+          <% active_class = (@chat_room == chat_room) ? 'active' : '' %>
+          <div class="card no-outline mb-2 room-card">
+            <div class="card-body">
+              <span class="room-name"><%= chat_room.second_user == current_user ? chat_room.first_user.email : chat_room.second_user.email %></span><br>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+
+    <div class="col-9">
+      <% if @chat_room.present? %>
+        <div class="chat-room">
+          <nav class="navbar navbar-light">
+            <span class="navbar-brand"><b><%= @chat_room.id %></b></span>
+          </nav>
+          <div id="messages">
+            <% @chat_room.messages.each do |message| %>
+              <%= render 'messages/message', message: message %>
+            <% end %>
+          </div>
+          <div class="chat-box">
+            <%= render 'messages/form', message: Message.new, chat_room: @chat_room %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
