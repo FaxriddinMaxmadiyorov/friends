@@ -3,7 +3,7 @@ class ChatRoomsController < ApplicationController
 
   # GET /chat_rooms or /chat_rooms.json
   def index
-    @chat_rooms = ChatRoom.all
+    @chat_rooms = ChatRoom.where(first_user: current_user).or(ChatRoom.where(second_user: current_user))
   end
 
   # GET /chat_rooms/1 or /chat_rooms/1.json

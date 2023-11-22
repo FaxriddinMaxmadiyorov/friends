@@ -5,7 +5,7 @@ class FriendsController < ApplicationController
 
   # GET /friends or /friends.json
   def index
-    @friends = Friend.all
+    @friends = current_user.friends
   end
 
   # GET /friends/1 or /friends/1.json
@@ -83,7 +83,8 @@ class FriendsController < ApplicationController
   def private_chat
     @friends = @friend.user.friends
     @chat_rooms = ChatRoom.where(first_user: current_user).or(ChatRoom.where(second_user: current_user))
-    @chat_room = ChatRoom.where(first_user: current_user, second_user: @friend.user).or(ChatRoom.where(first_user: current_user, second_user: @friend.user)).last
+    second_user = User.find_by_email(@friend.email)
+    @chat_room = ChatRoom.where(first_user: current_user, second_user: second_user).or(ChatRoom.where(first_user: second_user, second_user: current_user)).last
   end
 
   private

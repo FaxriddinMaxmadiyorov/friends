@@ -6,7 +6,7 @@
     <div class="col-3 rooms-sidebar">
       <div class="card no-outline">
         <div class="card-body">
-          <small>Logged in as</small> 
+          <small>Logged in as</small>
           <b><%= current_user.email %></b>
         </div>
       </div>
@@ -14,14 +14,16 @@
       <%= render 'form',chat_room: ChatRoom.new %>
       <hr>
       <% @chat_rooms.each do |chat_room| %>
-        <%= link_to chat_room, class: 'room-link' do %>
+        <% if chat_room.first_user == current_user %>
+          <% target_chat_room = Friend.find_by_email(chat_room.second_user.email) %>
+        <% else %>
+          <% target_chat_room = Friend.find_by_email(chat_room.first_user.email) %>
+        <% end %>
+        <%= link_to private_chat_friend_path(target_chat_room), class: 'room-link' do %>
           <% active_class = (@chat_room == chat_room) ? 'active' : '' %>
           <div class="card no-outline mb-2 room-card">
             <div class="card-body">
               <span class="room-name"><%= chat_room.id %></span><br>
-              <span class="member-count">
-                <small><%= chat_room.users.uniq.count %></small>
-              </span>
             </div>
           </div>
         <% end %>
@@ -33,7 +35,6 @@
         <div class="chat-room">
           <nav class="navbar navbar-light">
             <span class="navbar-brand"><b><%= @chat_room.id %></b></span>
-            <small><%= @chat_room.users.uniq.count %> Members</small>
           </nav>
           <div id="messages">
             <% @chat_room.messages.each do |message| %>

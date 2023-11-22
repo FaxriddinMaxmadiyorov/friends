@@ -12,11 +12,17 @@
       </div>
       <hr>
       <% @chat_rooms.each do |chat_room| %>
-        <%= link_to chat_room, class: 'room-link' do %>
+        <% if chat_room.first_user == current_user %>
+          <% target_chat_room = chat_room.second_user.email %>
+        <% else %>
+          <% target_chat_room = chat_room.first_user.email %>
+        <% end %>
+
+        <%= link_to private_chat_friend_path(Friend.find_by_email(target_chat_room)), class: 'room-link' do %>
           <% active_class = (@chat_room == chat_room) ? 'active' : '' %>
           <div class="card no-outline mb-2 room-card">
             <div class="card-body">
-              <span class="room-name"><%= chat_room.second_user == current_user ? chat_room.first_user.email : chat_room.second_user.email %></span><br>
+              <span class="room-name"><%= target_chat_room %></span><br>
             </div>
           </div>
         <% end %>
