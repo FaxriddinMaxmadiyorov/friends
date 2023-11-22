@@ -14,9 +14,9 @@ class FriendsController < ApplicationController
     @friend_been_registered = true if User.where(email: @friend.email).exists?
 
     @already_chat_initialized = false
-    second_user = User.find_by_email(@friend.email)
-    @already_chat_initialized = true if ChatRoom.where(first_user: current_user, second_user: second_user).exists? ||
-                                        ChatRoom.where(first_user: second_user, second_user: current_user).exists?
+    @second_user = User.find_by_email(@friend.email)
+    @already_chat_initialized = true if ChatRoom.where(first_user: current_user, second_user: @second_user).exists? ||
+                                        ChatRoom.where(first_user: @second_user, second_user: current_user).exists?
   end
 
   # GET /friends/new

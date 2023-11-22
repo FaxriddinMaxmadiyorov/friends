@@ -3,7 +3,7 @@
   <% if @friend_been_registered %>
     <% if @already_chat_initialized %>
       <%= link_to 'Chat with friend', private_chat_friend_path(@friend), class:"btn btn-secondary" %>
-    <% else %>
+    <% elsif current_user != @second_user %>
       <%= link_to 'Chat with friend', initialize_chat_friend_path(@friend), class:"btn btn-secondary", method: :post %>
     <% end %>
   <% end %>
