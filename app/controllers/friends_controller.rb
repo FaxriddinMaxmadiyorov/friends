@@ -73,7 +73,7 @@ class FriendsController < ApplicationController
   end
 
   def initialize_chat
-    last_chat_room = ChatRoom.last
+    last_chat_room = ChatRoom.last&.id.to_i
     name = "chat_room##{last_chat_room.id}"
     ChatRoom.create(name: name, first_user: current_user, second_user: User.find_by_email(@friend.email))
     byebug
