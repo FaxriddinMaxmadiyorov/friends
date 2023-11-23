@@ -76,7 +76,6 @@ class FriendsController < ApplicationController
     last_chat_room = ChatRoom.last
     name = "chat_room##{last_chat_room&.id.to_i}"
     ChatRoom.create(name: name, first_user: current_user, second_user: User.find_by_email(@friend.email))
-    byebug
     redirect_to private_chat_friend_path(@friend)
   end
 
