@@ -73,8 +73,8 @@ class FriendsController < ApplicationController
   end
 
   def initialize_chat
-    last_chat_room = ChatRoom.last&.id.to_i
-    name = "chat_room##{last_chat_room.id}"
+    last_chat_room = ChatRoom.last
+    name = "chat_room##{last_chat_room&.id.to_i}"
     ChatRoom.create(name: name, first_user: current_user, second_user: User.find_by_email(@friend.email))
     byebug
     redirect_to private_chat_friend_path(@friend)
