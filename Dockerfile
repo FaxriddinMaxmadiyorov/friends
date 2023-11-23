@@ -1,10 +1,18 @@
-# syntax=docker/dockerfile:1
+#
+# NOTE: THIS DOCKERFILE IS GENERATED VIA "apply-templates.sh"
+#
+# PLEASE DO NOT EDIT IT DIRECTLY.
+#
 
-# Make sure RUBY_VERSION matches the Ruby version in .ruby-version and Gemfile
-ARG RUBY_VERSION=2.6.10
-FROM registry.docker.com/library/ruby:$RUBY_VERSION-slim as base
+FROM buildpack-deps:bullseye
 
-WORKDIR /rails
+# skip installing gem documentation
+RUN set -eux; \
+	mkdir -p /usr/local/etc; \
+	{ \
+		echo 'install: --no-document'; \
+		echo 'update: --no-document'; \
+	} >> /usr/local/etc/gemrc
 
 # Set production environment
 ENV RAILS_ENV="production" \
@@ -14,73 +22,81 @@ ENV RAILS_ENV="production" \
     BUNDLE_PATH="/usr/local/bundle"
 
 
-# Throw-away build stage to reduce size of final image
-FROM base as build
+ENV LANG C.UTF-8
+ENV RUBY_MAJOR 3.0
+ENV RUBY_VERSION 3.0.6
+ENV RUBY_DOWNLOAD_SHA256 b5cbee93e62d85cfb2a408c49fa30a74231ae8409c2b3858e5f5ea254d7ddbd1
 
-# Install packages needed to build gems
-# NOTE: This example project intentionally does not require or install node.js
+# some of ruby's build scripts are written in ruby
+#   we purge system ruby later to make sure our final image uses what we just built
+RUN set -eux; \
+	\
+	savedAptMark="$(apt-mark showmanual)"; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
+		bison \
+		dpkg-dev \
+		libgdbm-dev \
+		ruby \
+	; \
+	rm -rf /var/lib/apt/lists/*; \
+	\
+	wget -O ruby.tar.xz "https://cache.ruby-lang.org/pub/ruby/${RUBY_MAJOR%-rc}/ruby-$RUBY_VERSION.tar.xz"; \
+	echo "$RUBY_DOWNLOAD_SHA256 *ruby.tar.xz" | sha256sum --check --strict; \
+	\
+	mkdir -p /usr/src/ruby; \
+	tar -xJf ruby.tar.xz -C /usr/src/ruby --strip-components=1; \
+	rm ruby.tar.xz; \
+	\
+	cd /usr/src/ruby; \
+	\
+# hack in "ENABLE_PATH_CHECK" disabling to suppress:
+#   warning: Insecure world writable dir
+	{ \
+		echo '#define ENABLE_PATH_CHECK 0'; \
+		echo; \
+		cat file.c; \
+	} > file.c.new; \
+	mv file.c.new file.c; \
+	\
+	autoconf; \
+	gnuArch="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)"; \
+	./configure \
+		--build="$gnuArch" \
+		--disable-install-doc \
+		--enable-shared \
+	; \
+	make -j "$(nproc)"; \
+	make install; \
+	\
+	apt-mark auto '.*' > /dev/null; \
+	apt-mark manual $savedAptMark > /dev/null; \
+	find /usr/local -type f -executable -not \( -name '*tkinter*' \) -exec ldd '{}' ';' \
+		| awk '/=>/ { so = $(NF-1); if (index(so, "/usr/local/") == 1) { next }; gsub("^/(usr/)?", "", so); print so }' \
+		| sort -u \
+		| xargs -r dpkg-query --search \
+		| cut -d: -f1 \
+		| sort -u \
+		| xargs -r apt-mark manual \
+	; \
+	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
+	\
+	cd /; \
+	rm -r /usr/src/ruby; \
+# verify we have no "ruby" packages installed
+	if dpkg -l | grep -i ruby; then exit 1; fi; \
+	[ "$(command -v ruby)" = '/usr/local/bin/ruby' ]; \
+# rough smoke test
+	ruby --version; \
+	gem --version; \
+	bundle --version
 
-RUN --mount=type=cache,target=/var/cache/apt \
-  --mount=type=cache,target=/var/lib/apt,sharing=locked \
-  --mount=type=tmpfs,target=/var/log \
-  rm -f /etc/apt/apt.conf.d/docker-clean; \
-  echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache; \
-  apt-get update -qq \
-  && apt-get install -yq --no-install-recommends \
-    build-essential \
-    gnupg2 \
-    less \
-    git \
-    libpq-dev \
-    libvips \
-    pkg-config
+# don't create ".bundle" in all our apps
+ENV GEM_HOME /usr/local/bundle
+ENV BUNDLE_SILENCE_ROOT_WARNING=1 \
+	BUNDLE_APP_CONFIG="$GEM_HOME"
+ENV PATH $GEM_HOME/bin:$PATH
+# adjust permissions of a few directories for running "gem install" as an arbitrary user
+RUN mkdir -p "$GEM_HOME" && chmod 1777 "$GEM_HOME"
 
-# Install application gems
-COPY Gemfile Gemfile.lock ./
-RUN bundle install && \
-    rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
-    bundle exec bootsnap precompile --gemfile
-
-# Copy application code
-COPY . .
-
-# Precompile bootsnap code for faster boot times
-RUN bundle exec bootsnap precompile app/ lib/
-
-# Precompiling assets for production without requiring secret RAILS_MASTER_KEY
-RUN SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile
-
-
-# Final stage for app image
-FROM base
-
-# Install packages needed for deployment
-RUN --mount=type=cache,target=/var/cache/apt \
-  --mount=type=cache,target=/var/lib/apt,sharing=locked \
-  --mount=type=tmpfs,target=/var/log \
-  rm -f /etc/apt/apt.conf.d/docker-clean; \
-  echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache; \
-  apt-get update -qq \
-  && apt-get install -yq --no-install-recommends \
-  curl \
-  postgresql-client \
-  libvips
-
-# Copy built artifacts: gems, application
-COPY --from=build /usr/local/bundle /usr/local/bundle
-COPY --from=build /rails /rails
-
-# Run and own only the runtime files as a non-root user for security
-RUN useradd rails --create-home --shell /bin/bash && \
-    chown -R rails:rails db log storage tmp
-USER rails:rails
-
-# Entrypoint prepares the database.
-ENTRYPOINT ["/rails/bin/docker-entrypoint"]
-
-HEALTHCHECK --interval=15s --timeout=3s --start-period=0s --start-interval=5s --retries=3 \
-  CMD curl -f http://localhost:3000/up || exit 1
-
-# Start the server by default, this can be overwritten at runtime
-EXPOSE 3000
-CMD ["bundle", "exec", "puma", "-C", "config/puma.rb"]
+CMD [ "irb" ]
